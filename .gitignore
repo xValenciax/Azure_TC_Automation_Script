@@ -1,0 +1,8 @@
+# Sensitive configuration — never commit these
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
