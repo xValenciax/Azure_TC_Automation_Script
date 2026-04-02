@@ -271,6 +271,8 @@ def create_test_cases_bulk(
 def trigger_n8n_workflow(
     webhook_url: str,
     output_file: pathlib.Path,
+    user_story_id: str,
+    user_story_desc: str,
     timeout: int = 120,
 ) -> Optional[dict]:
     """
@@ -292,8 +294,8 @@ def trigger_n8n_workflow(
     print(f"\n[N8N] Triggering workflow → {webhook_url}")
     print(f"  Waiting for workflow to complete (timeout: {timeout}s)...")
     payload = {
-        "UserStoryID": "40521",
-        "UserStory": "As a user, I want to be able to log in to the application so that I can access my account."
+        "UserStoryID": user_story_id,
+        "UserStory": user_story_desc
     }
     try:
         response = requests.post(
@@ -428,16 +430,23 @@ if __name__ == "__main__":
     N8N_CFG       = cfg.get("n8n", {})
     N8N_WEBHOOK   = N8N_CFG.get("webhook_url", "").strip()
     N8N_TIMEOUT   = int(N8N_CFG.get("timeout", 120))
+    USER_STORY_ID = cfg.get("user_story_id", "")
+    USER_STORY_DESC = cfg.get("user_story_description", "")
 
     # Step 1: trigger N8N workflow and capture its JSON output
     n8n_output = None
     if N8N_WEBHOOK:
-        print("\n[1/4] Triggering N8N workflow...")
-        n8n_output = trigger_n8n_workflow(
-            webhook_url=N8N_WEBHOOK,
-            output_file=TEST_CASES_FILE,  # Save directly to test_cases.json
-            timeout=N8N_TIMEOUT,
-        )
+        if USER_STORY_ID and USER_STORY_DESC:
+            print(f"\n[1/4] Triggering N8N workflow for User Story #{USER_STORY_ID}...")
+            n8n_output = trigger_n8n_workflow(
+                webhook_url=N8N_WEBHOOK,
+                output_file=TEST_CASES_FILE,  # Save directly to test_cases.json
+                user_story_id=USER_STORY_ID,
+                user_story_desc=USER_STORY_DESC,
+                timeout=N8N_TIMEOUT,
+            )
+        else:
+            print("\n  [!] 'user_story_id' or 'user_story_description' missing in config.json. Skipping N8N workflow.")
         
         if n8n_output and isinstance(n8n_output, list):
             print(f"  ✓ Successfully retrieved {len(n8n_output)} test cases from N8N.")
