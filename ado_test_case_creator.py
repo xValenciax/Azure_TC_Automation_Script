@@ -52,7 +52,7 @@ def load_config(path: pathlib.Path = CONFIG_FILE) -> dict:
         )
     with path.open(encoding="utf-8") as f:
         cfg = json.load(f)
-    required = {"organization", "project", "pat", "api_version"}
+    required = {"organization", "project", "pat", "api_version", "user_story_id", "user_story_description"}
     missing = required - cfg.keys()
     if missing:
         raise ValueError(f"Missing required config keys in '{path.name}': {missing}")
@@ -430,23 +430,20 @@ if __name__ == "__main__":
     N8N_CFG       = cfg.get("n8n", {})
     N8N_WEBHOOK   = N8N_CFG.get("webhook_url", "").strip()
     N8N_TIMEOUT   = int(N8N_CFG.get("timeout", 120))
-    USER_STORY_ID = cfg.get("user_story_id", "")
-    USER_STORY_DESC = cfg.get("user_story_description", "")
+    USER_STORY_ID = cfg["user_story_id"]
+    USER_STORY_DESC = cfg["user_story_description"]
 
     # Step 1: trigger N8N workflow and capture its JSON output
     n8n_output = None
     if N8N_WEBHOOK:
-        if USER_STORY_ID and USER_STORY_DESC:
-            print(f"\n[1/4] Triggering N8N workflow for User Story #{USER_STORY_ID}...")
-            n8n_output = trigger_n8n_workflow(
-                webhook_url=N8N_WEBHOOK,
-                output_file=TEST_CASES_FILE,  # Save directly to test_cases.json
-                user_story_id=USER_STORY_ID,
-                user_story_desc=USER_STORY_DESC,
-                timeout=N8N_TIMEOUT,
-            )
-        else:
-            print("\n  [!] 'user_story_id' or 'user_story_description' missing in config.json. Skipping N8N workflow.")
+        print(f"\n[1/4] Triggering N8N workflow for User Story #{USER_STORY_ID}...")
+        n8n_output = trigger_n8n_workflow(
+            webhook_url=N8N_WEBHOOK,
+            output_file=TEST_CASES_FILE,  # Save directly to test_cases.json
+            user_story_id=USER_STORY_ID,
+            user_story_desc=USER_STORY_DESC,
+            timeout=N8N_TIMEOUT,
+        )
         
         if n8n_output and isinstance(n8n_output, list):
             print(f"  ✓ Successfully retrieved {len(n8n_output)} test cases from N8N.")

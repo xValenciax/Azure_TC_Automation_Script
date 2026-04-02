@@ -6,10 +6,11 @@ A lightweight Python script that **bulk-creates structured Test Case work items*
 
 ## How It Works
 
-1. The script reads your Azure DevOps credentials from **`config.json`**
-2. It smoke-tests your authentication and confirms the target project is reachable
-3. It reads your test case definitions from **`test_cases.json`**
-4. It creates each test case as a Work Item of type **Test Case**, with all steps properly formatted as Azure DevOps XML, linked to the specified parent User Story
+1. The script reads your Azure DevOps credentials and workflow details from **`config.json`**
+2. It triggers your n8n webhook to dynamically generate test cases based on the provided User Story, and saves the output to the test cases file
+3. It smoke-tests your authentication and confirms the target project is reachable
+4. It reads the newly generated test case definitions from **`test_cases.json`**
+5. It creates each test case as a Work Item of type **Test Case**, with all steps properly formatted as Azure DevOps XML, linked to the specified parent User Story
 
 ---
 
@@ -41,14 +42,21 @@ pip install requests
 
 ### 1. Configure `config.json`
 
-Fill in your Azure DevOps details:
+Fill in your Azure DevOps details and N8N workflow settings:
 
 ```json
 {
     "organization": "your-org-name",
     "project": "your-project-name",
     "pat": "your-personal-access-token",
-    "api_version": "7.1"
+    "api_version": "7.1",
+    "user_story_id": "<USER-STORY-ID>",
+    "user_story_description": "<USER-STORY-DESCRIPTION>",
+    "n8n": {
+        "webhook_url": "<YOUR-N8N-WEBHOOK-URL>",
+        "output_file": "test_cases.json",
+        "timeout": 120
+    }
 }
 ```
 
@@ -58,6 +66,11 @@ Fill in your Azure DevOps details:
 | `project`      | The exact project name (case-sensitive) as it appears in Azure DevOps     |
 | `pat`          | A Personal Access Token with **Work Items → Read & Write** scope          |
 | `api_version`  | Azure DevOps REST API version — `7.1` is recommended and works by default |
+| `user_story_id`| **Mandatory.** The exact Azure DevOps User Story ID you want to test      |
+| `user_story_description` | **Mandatory.** A text description of the logic the User Story implements |
+| `n8n.webhook_url` | Full URL to your 24/7 self-hosted n8n webhook trigger |
+| `n8n.output_file` | Where n8n saves the AI response (default: `test_cases.json`) |
+| `n8n.timeout`  | Max seconds script will wait for n8n to respond (default `120`) |
 
 #### How to create a PAT
 
@@ -88,7 +101,17 @@ Fill in your Azure DevOps details:
 
 ---
 
-### 2. Define your test cases in `test_cases.json`
+### 2. Automated Test Case Generation (via n8n)
+
+Because `user_story_id` and `user_story_description` are mandatory in your `config.json`, the script fully automates the test generation phase:
+
+1. It sends a POST request with the User Story details to the `webhook_url`.
+2. It waits synchronously (up to `timeout` seconds) for the n8n AI workflow to generate the step-by-step test cases.
+3. Once received, it overwrites the `test_cases.json` file beautifully with the new JSON structured data.
+
+---
+
+### 3. Review `test_cases.json` (Auto-Generated)
 
 This file must be a JSON array. Each element represents one Test Case work item:
 
