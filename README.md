@@ -52,20 +52,36 @@ Fill in your Azure DevOps details:
 }
 ```
 
-| Key            | Description                                                                 |
-|----------------|-----------------------------------------------------------------------------|
-| `organization` | The slug from your ADO URL: `https://dev.azure.com/{organization}/`        |
-| `project`      | The exact project name (case-sensitive) as it appears in Azure DevOps       |
-| `pat`          | A Personal Access Token with **Work Items → Read & Write** scope            |
-| `api_version`  | Azure DevOps REST API version — `7.1` is recommended and works by default   |
+| Key            | Description                                                               |
+| -------------- | ------------------------------------------------------------------------- |
+| `organization` | The slug from your ADO URL: `https://dev.azure.com/{organization}/`       |
+| `project`      | The exact project name (case-sensitive) as it appears in Azure DevOps     |
+| `pat`          | A Personal Access Token with **Work Items → Read & Write** scope          |
+| `api_version`  | Azure DevOps REST API version — `7.1` is recommended and works by default |
 
 #### How to create a PAT
 
-1. Go to your Azure DevOps org and click your profile icon (top-right)
-2. Select **Personal access tokens**
-3. Click **+ New Token**
-4. Set the scope to **Work Items → Read & Write**
-5. Copy the generated token and paste it into `config.json`
+1. Sign in to your Azure DevOps organization:
+   `https://dev.azure.com/{your-organization}`
+
+2. Click the **User settings** icon in the top-right corner of the page (the person icon next to your profile picture).
+
+3. Select **Personal access tokens** from the dropdown menu.
+
+4. Click **+ New Token**.
+
+5. Fill in the token details:
+   - **Name** — give it a recognizable name, e.g. `TC Automation Script`
+   - **Organization** — select your organization from the dropdown
+   - **Expiration** — choose a suitable expiry date (e.g. 30 or 90 days)
+   - **Scopes** — select **Custom defined**, then scroll down to **Work Items** and check **Read & write**
+
+6. Click **Create**.
+
+7. **Copy the token immediately** — Azure DevOps will only show it once. Paste it into `config.json` as the value for `"pat"`.
+
+> [!CAUTION]
+> If you navigate away without copying the token, it cannot be retrieved. You will need to delete it and create a new one.
 
 > [!CAUTION]
 > `config.json` is excluded from Git via `.gitignore`. **Never commit it** — it contains your PAT which grants write access to your Azure DevOps project.
@@ -105,13 +121,13 @@ This file must be a JSON array. Each element represents one Test Case work item:
 ]
 ```
 
-| Field              | Type           | Description                                                         |
-|--------------------|----------------|---------------------------------------------------------------------|
-| `title`            | `string`       | The title of the Test Case work item                                |
-| `parent_story_id`  | `integer`      | The Work Item ID of the parent User Story to link to                |
-| `steps`            | `array`        | List of test steps                                                  |
-| `steps[].action`   | `string`       | What the tester should do                                           |
-| `steps[].expected` | `string`       | The expected result (can be an empty string `""` if not applicable) |
+| Field              | Type      | Description                                                         |
+| ------------------ | --------- | ------------------------------------------------------------------- |
+| `title`            | `string`  | The title of the Test Case work item                                |
+| `parent_story_id`  | `integer` | The Work Item ID of the parent User Story to link to                |
+| `steps`            | `array`   | List of test steps                                                  |
+| `steps[].action`   | `string`  | What the tester should do                                           |
+| `steps[].expected` | `string`  | The expected result (can be an empty string `""` if not applicable) |
 
 > [!TIP]
 > You can have **multiple test cases** in the array, each targeting the **same or different** parent User Story IDs.
@@ -157,14 +173,14 @@ Summary — open these in Azure DevOps to verify:
 
 ## Troubleshooting
 
-| Error | Likely Cause | Fix |
-|-------|-------------|-----|
-| `Authentication failed (401)` | PAT is wrong, expired, or has insufficient scope | Regenerate your PAT with **Work Items → Read & Write** scope |
-| `Project not found (404)` | `organization` or `project` is misspelled | Check them against your ADO URL — both are case-sensitive |
-| `Config file not found` | `config.json` is missing | Create it next to the script using the template above |
-| `Test cases file not found` | `test_cases.json` is missing | Create it with at least one test case entry |
-| `Missing required config keys` | A key is missing from `config.json` | Ensure all four keys are present: `organization`, `project`, `pat`, `api_version` |
-| `JSONDecodeError` | `config.json` or `test_cases.json` contains invalid JSON | Validate the file at [jsonlint.com](https://jsonlint.com) |
+| Error                          | Likely Cause                                             | Fix                                                                               |
+| ------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `Authentication failed (401)`  | PAT is wrong, expired, or has insufficient scope         | Regenerate your PAT with **Work Items → Read & Write** scope                      |
+| `Project not found (404)`      | `organization` or `project` is misspelled                | Check them against your ADO URL — both are case-sensitive                         |
+| `Config file not found`        | `config.json` is missing                                 | Create it next to the script using the template above                             |
+| `Test cases file not found`    | `test_cases.json` is missing                             | Create it with at least one test case entry                                       |
+| `Missing required config keys` | A key is missing from `config.json`                      | Ensure all four keys are present: `organization`, `project`, `pat`, `api_version` |
+| `JSONDecodeError`              | `config.json` or `test_cases.json` contains invalid JSON | Validate the file at [jsonlint.com](https://jsonlint.com)                         |
 
 ---
 
