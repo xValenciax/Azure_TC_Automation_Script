@@ -2,20 +2,34 @@
 Azure DevOps Test Case Automation
 ==================================
 Creates structured Test Case work items linked to parent User Stories.
+Optionally triggers an N8N workflow via webhook and saves the resulting
+JSON output to a file.
 
 Requirements:
     pip install requests
 
 Usage:
-    1. Set your credentials in the CONFIG block below.
-    2. Define your test cases in the TEST_CASES list at the bottom.
+    1. Set your credentials and optional N8N config in config.json.
+    2. Define your test cases in test_cases.json.
     3. Run: python ado_test_case_creator.py
+
+N8N integration (optional):
+    Add an "n8n" block to config.json:
+    {
+      "n8n": {
+        "webhook_url": "http://localhost:5678/webhook/your-path",
+        "output_file":  "n8n_output.json"   // optional, default shown
+      }
+    }
+    The script will POST run results to the N8N webhook, wait for the
+    workflow to complete, and save the JSON response to 'output_file'.
 """
 
 import base64
 import json
 import pathlib
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from html import escape
 from typing import Optional
 import requests
@@ -254,6 +268,95 @@ def create_test_cases_bulk(
     return results
 
 
+def trigger_n8n_workflow(
+    webhook_url: str,
+    output_file: pathlib.Path,
+    timeout: int = 120,
+) -> Optional[dict]:
+    """
+    Triggers an N8N workflow via its webhook trigger node, waits for the
+    workflow to finish, and saves the returned JSON output to *output_file*.
+
+    How it works:
+      1. POSTs a trigger request to the webhook URL.
+      2. Blocks until N8N responds — the workflow executes synchronously
+         from the script's perspective (N8N webhook node waits for the
+         last node to finish before returning the response).
+      3. Parses the JSON response body as the workflow output and writes
+         it to *output_file* on disk.
+
+    Returns the parsed JSON output dict on success, or None on error.
+    Fails gracefully — a network error prints a warning but never crashes
+    the main script.
+    """
+    print(f"\n[N8N] Triggering workflow → {webhook_url}")
+    print(f"  Waiting for workflow to complete (timeout: {timeout}s)...")
+    payload = {
+        "UserStoryID": "40521",
+        "UserStory": "As a user, I want to be able to log in to the application so that I can access my account."
+    }
+    try:
+        response = requests.post(
+            webhook_url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=timeout,
+        )
+
+        if response.status_code not in (200, 201):
+            print(
+                f"  ⚠ N8N responded with HTTP {response.status_code}. "
+                f"Check your webhook node is active (Production mode).\n"
+                f"  Response: {response.text[:300]}"
+            )
+            return None
+
+        print(f"  ✓ Workflow completed (HTTP {response.status_code})")
+
+        # Parse the workflow's JSON output
+        try:
+            output_data = response.json()
+            print(f"  [Debug] Response: {str(output_data)[:200]}")
+        except ValueError:
+            print(
+                f"  ⚠ N8N response is not valid JSON — saving raw text instead.\n"
+                f"  Raw response (first 300 chars): {response.text[:300]}"
+            )
+            output_file.write_text(response.text, encoding="utf-8")
+            print(f"  📄 Raw response saved → {output_file.name}")
+            return None
+
+        # Check if response is empty or just the n8n webhook test payload
+        if not output_data or (isinstance(output_data, dict) and ("webhookUrl" in output_data or "headers" in output_data)):
+             print(
+                 f"  ⚠ N8N returned its default/empty response instead of test cases.\n"
+                 f"    Please check your N8N Webhook node settings."
+             )
+
+        # Save JSON output to file anyway so we can inspect it
+        output_file.write_text(
+            json.dumps(output_data, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        print(f"  📄 Workflow JSON output saved to → {output_file.name}")
+        return output_data
+
+    except requests.exceptions.ConnectionError:
+        print(
+            "  ⚠ Could not reach N8N — is it running at the configured URL?\n"
+            f"  URL tried: {webhook_url}"
+        )
+    except requests.exceptions.Timeout:
+        print(
+            f"  ⚠ N8N webhook timed out after {timeout}s.\n"
+            "  The workflow may still be running. Increase 'timeout' in config.json if needed."
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"  ⚠ Unexpected error triggering N8N workflow: {e}")
+
+    return None
+
+
 def verify_auth(organization: str, project: str, pat: str) -> None:
     """
     Smoke-tests authentication and project access before running bulk creation.
@@ -322,18 +425,43 @@ if __name__ == "__main__":
     PROJECT       = cfg["project"]
     PAT           = cfg["pat"]
     API_VERSION   = cfg["api_version"]
+    N8N_CFG       = cfg.get("n8n", {})
+    N8N_WEBHOOK   = N8N_CFG.get("webhook_url", "").strip()
+    N8N_TIMEOUT   = int(N8N_CFG.get("timeout", 120))
 
-    # Step 1: verify auth and project access before touching work items
-    print("\n[1/3] Verifying authentication and project access...")
+    # Step 1: trigger N8N workflow and capture its JSON output
+    n8n_output = None
+    if N8N_WEBHOOK:
+        print("\n[1/4] Triggering N8N workflow...")
+        n8n_output = trigger_n8n_workflow(
+            webhook_url=N8N_WEBHOOK,
+            output_file=TEST_CASES_FILE,  # Save directly to test_cases.json
+            timeout=N8N_TIMEOUT,
+        )
+        
+        if n8n_output and isinstance(n8n_output, list):
+            print(f"  ✓ Successfully retrieved {len(n8n_output)} test cases from N8N.")
+        else:
+            print("\n  [!] N8N did not return a valid list of test cases in the response.")
+            print("      Exiting to prevent creating malformed work items.")
+            exit(1)
+            
+    else:
+        print("\n[1/4] No webhook_url configured — skipping N8N workflow trigger.")
+        print("  To enable: add an \"n8n\" block to config.json with your webhook_url.")
+
+    # Step 2: verify auth and project access before touching work items
+    print("\n[2/4] Verifying authentication and project access...")
     verify_auth(ORGANIZATION, PROJECT, PAT)
 
-    # Step 2: load test cases from external file
-    print(f"\n[2/3] Loading test cases from '{TEST_CASES_FILE.name}'...")
+    # Step 3: load test cases from external file
+    print(f"\n[3/4] Loading test cases from '{TEST_CASES_FILE.name}'...")
     TEST_CASES = load_test_cases()
     print(f"  Loaded {len(TEST_CASES)} test case(s).")
 
-    # Step 3: create all test cases
-    print(f"\n[3/3] Creating {len(TEST_CASES)} test case(s) in project '{PROJECT}'...")
+    # Step 4: create all test cases
+    print(f"\n[4/4] Creating {len(TEST_CASES)} test case(s) in project '{PROJECT}'...")
+    _failures: list[dict] = []
     created = create_test_cases_bulk(
         test_cases=TEST_CASES,
         organization=ORGANIZATION,
@@ -341,8 +469,15 @@ if __name__ == "__main__":
         pat=PAT,
         api_version=API_VERSION,
     )
+    # Collect failures from test cases that were not created
+    _created_titles = {r["title"] for r in created}
+    _failures = [
+        {"title": tc["title"], "error": "Failed — see output above"}
+        for tc in TEST_CASES
+        if tc["title"] not in _created_titles
+    ]
 
-    # Step 4: print summary with direct links
+    # Print summary with direct links
     if created:
         print(f"\nSummary — open these in Azure DevOps to verify:")
         for item in created:
