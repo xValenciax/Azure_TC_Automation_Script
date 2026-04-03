@@ -7,3 +7,4 @@ __pycache__/
 *.pyo
 .venv/
 test_cases.json
+script.ico

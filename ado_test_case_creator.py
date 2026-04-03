@@ -447,6 +447,8 @@ if __name__ == "__main__":
         
         if n8n_output and isinstance(n8n_output, list):
             print(f"  ✓ Successfully retrieved {len(n8n_output)} test cases from N8N.")
+            print(f"\n  [PAUSE] The script has paused so you can manually review/edit '{TEST_CASES_FILE.name}'.")
+            input("  Press ENTER when you are ready to continue and upload to Azure DevOps...")
         else:
             print("\n  [!] N8N did not return a valid list of test cases in the response.")
             print("      Exiting to prevent creating malformed work items.")
