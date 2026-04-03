@@ -8,3 +8,8 @@ __pycache__/
 .venv/
 test_cases.json
 script.ico
+
+# Build Artifacts
+build/
+dist/
+*.spec
