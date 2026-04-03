@@ -41,11 +41,18 @@ pip install requests
 
 ## Execution Modes
 
-You can run the automation tool in two distinct ways depending on your workflow:
+You can run the automation tool in three distinct ways depending on your workflow:
 
-### Mode 1: Interactive Terminal (Recommended)
+### Mode 1: Standalone Executable (Easiest)
 
-Run the brand new interactive application! It requires zero configuration files and provides fully secure, colored terminal prompts.
+You can run this automation perfectly without having Python installed!
+
+1. **Download**: Go to the [Releases Page](https://github.com/xValenciax/Azure_TC_Automation_Script/releases/tag/V1.0.0) and download the `interactive_app.exe` file.
+2. **Run**: Double click the `.exe` file to seamlessly launch the interactive terminal environment.
+
+### Mode 2: Interactive Terminal (via Python)
+
+Run the brand new interactive application directly from the source code. It requires zero configuration files and provides fully secure, colored terminal prompts.
 
 ```bash
 python interactive_app.py
@@ -53,7 +60,7 @@ python interactive_app.py
 
 > **What it does**: It will ask you for your Azure Organization, Project, PAT (hidden input), User Story ID, and Description one by one directly in the console, saving you from navigating code or config files.
 
-### Mode 2: Config-Based Automation
+### Mode 3: Config-Based Automation
 
 Best for experienced users or pure automation pipelines where triggering test cases rapidly through files is preferred rather than manual prompting.
 
@@ -168,6 +175,21 @@ Successfully created 15 work item(s):
   # 41389  Verify login with valid registered email and password
           https://dev.azure.com/...
 ```
+
+---
+
+## 🛠 Building From Source
+
+If you made modifications to the `interactive_app.py` script and want to re-compile your own standalone `.exe` version for distribution, use **PyInstaller**:
+
+```bash
+pip install pyinstaller
+
+# Compile the interactive app into a single executable file with the icon
+pyinstaller --onefile interactive_app.py --icon script.ico
+```
+
+The resulting executable will be generated inside the `dist/` folder!
 
 ---
 
