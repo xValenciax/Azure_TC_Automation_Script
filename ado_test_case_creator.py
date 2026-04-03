@@ -17,8 +17,7 @@ N8N integration (optional):
     Add an "n8n" block to config.json:
     {
       "n8n": {
-        "webhook_url": "http://localhost:5678/webhook/your-path",
-        "output_file":  "n8n_output.json"   // optional, default shown
+        "webhook_url": "http://localhost:5678/webhook/your-path"
       }
     }
     The script will POST run results to the N8N webhook, wait for the
@@ -141,9 +140,6 @@ def build_create_test_case_payload(
             "value": {
                 "rel": "System.LinkTypes.Hierarchy-Reverse",
                 "url": parent_url,
-                "attributes": {
-                    "comment": "Linked to parent User Story via automation"
-                },
             },
         },
     ]
