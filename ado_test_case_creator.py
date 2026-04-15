@@ -33,10 +33,23 @@ from html import escape
 from typing import Optional
 import requests
 
+import sys
+
+# ─────────────────────────────────────────────
+# PATH RESOLUTION FOR PYINSTALLER & NORMAL RUNS
+# ─────────────────────────────────────────────
+if getattr(sys, 'frozen', False):
+    # PyInstaller creates a temporary folder and stores path in sys._MEIPASS
+    # We want to save our JSON files next to the actual .exe in this case
+    BASE_DIR = pathlib.Path(sys.executable).parent
+else:
+    # Normal Python execution
+    BASE_DIR = pathlib.Path(__file__).parent
+
 # ─────────────────────────────────────────────
 # CONFIG — loaded from external JSON file
 # ─────────────────────────────────────────────
-CONFIG_FILE = pathlib.Path(__file__).parent / "config.json"
+CONFIG_FILE = BASE_DIR / "config.json"
 
 
 def load_config(path: pathlib.Path = CONFIG_FILE) -> dict:
@@ -389,7 +402,7 @@ def verify_auth(organization: str, project: str, pat: str) -> None:
 # ─────────────────────────────────────────────
 # TEST CASES — loaded from external JSON file
 # ─────────────────────────────────────────────
-TEST_CASES_FILE = pathlib.Path(__file__).parent / "test_cases.json"
+TEST_CASES_FILE = BASE_DIR / "test_cases.json"
 
 
 def load_test_cases(path: pathlib.Path = TEST_CASES_FILE) -> list[dict]:
@@ -401,10 +414,10 @@ def load_test_cases(path: pathlib.Path = TEST_CASES_FILE) -> list[dict]:
         - steps           : list of {"action": str, "expected": str}
     """
     if not path.exists():
-        raise FileNotFoundError(
-            f"Test cases file not found: {path}\n"
-            f"Create '{path.name}' next to this script with your test case definitions."
-        )
+        # Auto-create the file to prevent crashes, especially helpful for first-time runs
+        path.write_text("[]", encoding="utf-8")
+        print(f"  [!] '{path.name}' did not exist. An empty file has been created at {path}.")
+        
     with path.open(encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, list):
