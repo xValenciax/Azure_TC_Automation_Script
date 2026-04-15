@@ -58,7 +58,7 @@ Run the brand new interactive application directly from the source code. It requ
 python interactive_app.py
 ```
 
-> **What it does**: It will ask you for your Azure Organization, Project, PAT (hidden input), User Story ID, and Description one by one directly in the console, saving you from navigating code or config files.
+> **What it does**: It will ask you for your Azure Organization, Project, PAT (hidden input), User Story ID, and Description one by one directly in the console, saving you from navigating code or config files. It also supports accepting **multi-line text inputs** for the User Story description (e.g., pasting multiple paragraphs directly into the terminal and finishing the input with `Ctrl+Z` then `Enter`).
 
 ### Mode 3: Config-Based Automation
 

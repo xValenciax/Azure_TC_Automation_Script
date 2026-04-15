@@ -43,8 +43,18 @@ def main():
         user_story_id = input(f"{YELLOW}▶ 4. User Story ID: {RESET}").strip()
         
         print(f"{YELLOW}▶ 5. User Story Description & Acceptance Criteria:{RESET}")
-        print(f"  {CYAN}(Press Enter after typing, or provide a single line summary){RESET}")
-        user_story_desc = input(f"  {YELLOW}❯ {RESET}").strip()
+        print(f"  {CYAN}(Type or paste your multi-line text.){RESET}")
+        print(f"  {CYAN}(To finish, Press Ctrl+Z then Enter){RESET}")
+        desc_lines = []
+        while True:
+            try:
+                line = input(f"  {YELLOW}❯ {RESET}")
+                if line.strip().upper() == 'EOF':
+                    break
+                desc_lines.append(line)
+            except EOFError:
+                break
+        user_story_desc = '\n'.join(desc_lines).strip()
         
         if not all([organization, project, pat, user_story_id, user_story_desc]):
             print(f"\n{RED}✖ All fields are required. Exiting...{RESET}")
