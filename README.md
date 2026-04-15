@@ -47,7 +47,7 @@ You can run the automation tool in three distinct ways depending on your workflo
 
 You can run this automation perfectly without having Python installed!
 
-1. **Download**: Go to the [Releases Page](https://github.com/xValenciax/Azure_TC_Automation_Script/releases/tag/latest) and download the `interactive_app.exe` file.
+1. **Download**: Go to the [Releases Page](https://github.com/xValenciax/Azure_TC_Automation_Script/releases/tag/Latest) and download the `interactive_app.exe` file.
 2. **Run**: Double click the `.exe` file to seamlessly launch the interactive terminal environment.
 
 ### Mode 2: Interactive Terminal (via Python)
